@@ -1,0 +1,271 @@
+show configuration
+Using 4737 out of 33554432 bytes
+!
+! Last configuration change at 11:58:02 UTC Mon Feb 12 2024 by revdau
+!
+version 17.3
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+service call-home
+platform qfp utilization monitor load 80
+platform punt-keepalive disable-kernel-core
+platform console virtual
+!
+hostname CiscoR2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+enable password 7 04690E102B20596E584B56
+!
+no aaa new-model
+!
+!
+!
+!
+!
+!
+!
+ip domain name revdau.com
+!
+!
+!
+login on-success log
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+! 
+! 
+! 
+! 
+!
+!
+!
+flow record IMSflowdata
+ match ipv4 tos
+ match ipv4 protocol
+ match ipv4 source address
+ match ipv4 destination address
+ match transport source-port
+ match transport destination-port
+ match interface input
+ match flow direction
+ match application name
+ collect ipv4 dscp
+ collect ipv4 id
+ collect ipv4 source mask
+ collect ipv4 destination mask
+ collect transport tcp flags
+ collect interface output
+ collect routing next-hop address ipv4
+ collect counter bytes
+ collect counter packets
+ collect timestamp sys-uptime first
+ collect timestamp sys-uptime last
+!
+!
+flow exporter netflowtest
+ description Netflowdataexporter
+ destination 134.119.223.245
+ source GigabitEthernet1
+ transport udp 5603
+ template data timeout 60
+ option interface-table
+ option application-table
+!
+!
+flow exporter IMS
+ description IMSflow
+ destination 95.216.211.180
+ source GigabitEthernet1
+ transport udp 2100
+ template data timeout 60
+ option interface-table
+ option application-table
+!
+!
+flow exporter IMSflow
+!
+!
+flow monitor netmonitor
+ exporter netflowtest
+ cache timeout active 60
+ record IMSflowdata
+!
+!
+flow monitor IMSmonitor
+ exporter IMS
+ cache timeout active 60
+ record IMSflowdata
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+crypto pki trustpoint TP-self-signed-2257187868
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-2257187868
+ revocation-check none
+ rsakeypair TP-self-signed-2257187868
+!
+crypto pki trustpoint SLA-TrustPoint
+ enrollment pkcs12
+ revocation-check crl
+!
+!
+crypto pki certificate chain TP-self-signed-2257187868
+ certificate self-signed 01 nvram:IOS-Self-Sig#1.cer
+crypto pki certificate chain SLA-TrustPoint
+ certificate ca 01 nvram:CiscoLicensi#1CA.cer
+!
+license udi pid CSR1000V sn 9XM4K80MDYO
+diagnostic bootup level minimal
+memory free low-watermark processor 71489
+!
+!
+spanning-tree extend system-id
+!
+username revdau privilege 15 password 7 113B1C1333131E2C557878
+username syslog privilege 15 secret 9 $9$X.HqT.Mi8nkw9k$dYQXbItcfT7OkHyzGpmwInTgOVxf7ovzEDFclCC7IPA
+username vmadmin privilege 15 secret 9 $9$Om/MQmDIcu1tGk$VwDAJiIhiN6AfN5XmdlNJYI9LHqClATKsgggqFHUiv6
+!
+redundancy
+!
+!
+!
+!
+!
+!
+!
+track 1 ip sla 1 state
+!
+! 
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+! 
+! 
+!
+!
+interface Loopback0
+ ip address 22.22.22.22 255.255.255.255
+!
+interface GigabitEthernet1
+ description Public WAN-Internet
+ ip flow monitor netmonitor input
+ ip flow monitor IMSmonitor input
+ ip flow monitor netmonitor output
+ ip flow monitor IMSmonitor output
+ ip address 134.119.179.21 255.255.255.248
+ ip nat outside
+ load-interval 30
+ negotiation auto
+ no mop enabled
+ no mop sysid
+!
+interface GigabitEthernet2
+ description R2PrivWan to R1privWan
+ ip address 172.16.31.3 255.255.255.0
+ load-interval 30
+ negotiation auto
+ no mop enabled
+ no mop sysid
+!
+interface GigabitEthernet3
+ description LAN
+ ip address 10.10.2.2 255.255.255.248
+ ip nat inside
+ load-interval 30
+ negotiation auto
+ no mop enabled
+ no mop sysid
+!
+router bgp 65001
+ bgp log-neighbor-changes
+ neighbor 134.119.179.20 remote-as 65000
+!
+ip forward-protocol nd
+ip http server
+ip http authentication local
+ip http secure-server
+!
+ip nat inside source list 1 interface GigabitEthernet1 overload
+ip route 0.0.0.0 0.0.0.0 134.119.179.17
+ip route 10.10.1.0 255.255.255.248 172.16.31.2
+ip ssh version 2
+!
+!
+ip sla 1
+ udp-jitter 172.16.31.2 5001 source-ip 172.16.31.3 source-port 5001 codec g711alaw
+  frequency 10
+ip sla schedule 1 life forever start-time now
+ip sla responder
+ip access-list standard 1
+ 10 permit 10.10.2.0 0.0.0.7
+!
+!
+snmp-server group RevDau@123 v3 priv 
+snmp-server view revdau iso included
+snmp-server community RevDau@123 RO
+snmp-server host 134.119.179.21 version 3 priv revdau 
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+line con 0
+ stopbits 1
+line vty 0 4
+ password 7 133712042F0D110A7A767B
+ login local
+ transport input ssh
+!
+call-home
+ ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
+ ! the email address configured in Cisco Smart License Portal will be used as contact email address to send SCH notifications.
+ contact-email-addr sch-smart-licensing@cisco.com
+ profile "CiscoTAC-1"
+  active
+  destination transport-method http
+!
+!
+!
+!
+!
+end
+
+CiscoR2#
