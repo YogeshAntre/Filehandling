@@ -76,7 +76,16 @@ def read_file(file_path):
     
 # if __name__ == "__main__":
 #      uvicorn.run(app="main:app", host="localhost", port=8001, reload=True)
+    
 
+class Comparision(BaseModel):
+    device1:str
+    file1:str
+    device2:str
+    file2:str
+class DeviceEnum(str, Enum):
+    device1 = "134.119.179.21"
+    device2 = "134.119.179.20"
 @app.post("/compare-configs/")
 def compare_configs(data: Comparision):
     try:
@@ -85,6 +94,19 @@ def compare_configs(data: Comparision):
         config1 = read_file(data.file1)
         config2 = read_file(data.file2)
         diff = difflib.unified_diff(config1, config2, fromfile=data.file1, tofile=data.file2)
+        diff_result = [line.rstrip('\n') for line in diff if line.strip()]
+        return {"diff_result": diff_result}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"File not found: {e.filename}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+if __name__ == "__main__":
+     uvicorn.run(app="main:app", host="localhost", port=8001, reload=True)
+       
+       
+       
+       
+       
         #print('AA',list(diff))
         # Separate lines with a space between two words if present before available
         # diff_result = []
@@ -107,7 +129,7 @@ def compare_configs(data: Comparision):
         
         # Remove trailing newline characters and unnecessary empty lines
         
-        diff_result = [line.rstrip('\n') for line in diff if line.strip()]
+        #diff_result = [line.rstrip('\n') for line in diff if line.strip()]
         # diff_result = []
         # for line in diff:
         #     line = line.rstrip('\n')
